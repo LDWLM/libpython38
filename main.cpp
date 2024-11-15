@@ -17,8 +17,22 @@ static uint64_t now_ms()
     return now_us() / 1000;
 }
 
-static int import_archive(const char *archive, const char *importer, const char *pwd)
+static int import_archive(const char *archive, const char *pwd)
 {
+
+    char code[4096];
+    size_t cap = sizeof(code);
+
+    PyObject *main_module = PyImport_AddModule("__main__");
+    PyObject *main_dict = PyModule_GetDict(main_module);
+
+    PyRun_String(IMPORTER, Py_file_input, main_dict, main_dict);
+
+    snprintf(code, cap, "ZipImporterWrapper('%s', b'%s').load()", archive, pwd);
+    PyRun_String(code, Py_file_input, main_dict, main_dict);
+
+    snprintf(code, cap, "sys.path.append('/home/atlas/Projects/Python/archive/.venv/lib/python3.8/site-packages/libs')");
+    PyRun_String(code, Py_file_input, main_dict, main_dict);
 
 }
 
@@ -38,21 +52,10 @@ static int demo2()
 
     PRINTF("%s start\n", __func__);
 
-    PyObject *main_module = PyImport_AddModule("__main__");
-    PyObject *main_dict = PyModule_GetDict(main_module);
-
-    PyRun_String(IMPORTER, Py_file_input, main_dict, main_dict);
-
-    snprintf(code, cap, "ZipImporterWrapper('%s', b'%s').load()", ZIP, PWD);
-    PyRun_String(code, Py_file_input, main_dict, main_dict);
-
-    // snprintf(code, cap, "print(globals())");
-    // PyRun_String(code, Py_file_input, main_dict, main_dict);
-
-    snprintf(code, cap, "sys.path.append('/home/atlas/Projects/Python/archive/.venv/lib/python3.8/site-packages/libs')");
-    PyRun_String(code, Py_file_input, main_dict, main_dict);
-    snprintf(code, cap, "logging.info(sys.path)");
-    PyRun_String(code, Py_file_input, main_dict, main_dict);
+    if(import_archive(ZIP, PWD))
+    {
+        return -1;
+    }
 
     snprintf(code, cap, "import pdf2docx");
     printf("running: %s\n", code);
